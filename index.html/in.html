@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Neo — Chatbot</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f6;margin:0;padding:24px;display:flex;justify-content:center}
+    .app{width:100%;max-width:700px;background:#fff;border-radius:10px;padding:18px;box-shadow:0 6px 22px rgba(0,0,0,0.08)}
+    .messages{height:420px;overflow:auto;border:1px solid #eee;padding:12px;border-radius:6px;margin-bottom:12px;background:#fafafa}
+    .msg{margin:8px 0}
+    .me{color:#0b5fff;text-align:right}
+    .neo{color:#0b8a5a;text-align:left}
+    #inputRow{display:flex;gap:8px}
+    input{flex:1;padding:10px;border:1px solid #ddd;border-radius:6px}
+    button{padding:10px 14px;border:none;background:#0b5fff;color:#fff;border-radius:6px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h2>Neo — chat</h2>
+    <div id="messages" class="messages"></div>
+    <div id="inputRow">
+      <input id="userInput" placeholder="Say hi to Neo..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function addMessage(text, who) {
+      const d = document.createElement('div');
+      d.className = 'msg ' + (who === 'me' ? 'me' : 'neo');
+      d.innerHTML = `<strong>${who === 'me' ? 'You' : 'Neo'}:</strong> ${text}`;
+      messagesEl.appendChild(d);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      addMessage(text, 'me');
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      addMessage('…thinking…', 'neo');
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const json = await res.json();
+        // remove the placeholder thinking message
+        const last = messagesEl.lastChild;
+        if (last && last.textContent.includes('…thinking…')) messagesEl.removeChild(last);
+        if (res.ok && json.reply) addMessage(json.reply, 'neo');
+        else addMessage('Sorry — Neo had an error. Try again.', 'neo');
+      } catch (err) {
+        // remove the thinking message
+        const last = messagesEl.lastChild;
+        if (last && last.textContent.includes('…thinking…')) messagesEl.removeChild(last);
+        addMessage('Network error when talking to Neo.', 'neo');
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+  </script>
+</body>
+</html>
