@@ -1,11 +1,11 @@
 ```javascript
-// Frontend Chat Script for Neo Chatbot
+// Neo Frontend Chat Script — Fixed Flash Issue
 
 const chatBox = document.getElementById("chat-box");
-const form = document.querySelector("form");
-const input = document.querySelector("input");
+const sendBtn = document.getElementById("send-btn");
+const userInput = document.getElementById("user-input");
 
-// Function to add messages to chat
+// Function to add chat messages
 function addMessage(sender, text) {
   const msg = document.createElement("div");
   msg.classList.add(sender);
@@ -14,36 +14,26 @@ function addMessage(sender, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const message = input.value.trim();
+// Handle send button click
+sendBtn.addEventListener("click", async () => {
+  const message = userInput.value.trim();
   if (!message) return;
 
-  // Add user message
   addMessage("user", message);
-  input.value = "";
+  userInput.value = "";
 
   try {
-    // Send to backend API
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
     });
 
-    if (!response.ok) throw new Error("Network response failed");
-
     const data = await response.json();
-
-    // Show bot reply
-    if (data && data.reply) {
-      addMessage("bot", data.reply);
-    } else {
-      addMessage("bot", "Hmm... I'm not sure what happened there 😅");
-    }
-  } catch (error) {
-    console.error(error);
-    addMessage("bot", "Oops, something went wrong. Please try again.");
+    addMessage("bot", data.reply || "Hmm... something went wrong.");
+  } catch (err) {
+    console.error(err);
+    addMessage("bot", "Error connecting to Neo 😔");
   }
 });
 ```
