@@ -1,40 +1,27 @@
-```javascript
-// Neo Frontend Chat Script — Fixed Flash Issue
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-const chatBox = document.getElementById("chat-box");
-const sendBtn = document.getElementById("send-btn");
-const userInput = document.getElementById("user-input");
-
-// Function to add chat messages
-function addMessage(sender, text) {
-  const msg = document.createElement("div");
-  msg.classList.add(sender);
-  msg.textContent = `${sender === "user" ? "You" : "Neo"}: ${text}`;
-  chatBox.appendChild(msg);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Handle send button click
-sendBtn.addEventListener("click", async () => {
-  const message = userInput.value.trim();
-  if (!message) return;
-
-  addMessage("user", message);
-  userInput.value = "";
+  const { message } = req.body;
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: message }],
+      }),
     });
 
     const data = await response.json();
-    addMessage("bot", data.reply || "Hmm... something went wrong.");
-  } catch (err) {
-    console.error(err);
-    addMessage("bot", "Error connecting to Neo 😔");
+    res.status(200).json({ reply: data.choices?.[0]?.message?.content });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
   }
-});
-```
+}
 
