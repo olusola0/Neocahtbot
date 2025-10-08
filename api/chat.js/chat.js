@@ -1,40 +1,50 @@
-export default async function handler(req, res) {
+```javascript
+// Frontend Chat Script for Neo Chatbot
+
+const chatBox = document.getElementById("chat-box");
+const form = document.querySelector("form");
+const input = document.querySelector("input");
+
+// Function to add messages to chat
+function addMessage(sender, text) {
+  const msg = document.createElement("div");
+  msg.classList.add(sender);
+  msg.textContent = `${sender === "user" ? "You" : "Neo"}: ${text}`;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const message = input.value.trim();
+  if (!message) return;
+
+  // Add user message
+  addMessage("user", message);
+  input.value = "";
+
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing OpenAI API key" });
-    }
-
-    const { message } = req.body;
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Send to backend API
+    const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: message }],
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
     });
+
+    if (!response.ok) throw new Error("Network response failed");
 
     const data = await response.json();
 
-    if (data.error) {
-      console.error("OpenAI Error:", data.error);
-      return res.status(500).json({ error: data.error.message });
+    // Show bot reply
+    if (data && data.reply) {
+      addMessage("bot", data.reply);
+    } else {
+      addMessage("bot", "Hmm... I'm not sure what happened there 😅");
     }
-
-    res.status(200).json({ reply: data.choices[0].message.content });
   } catch (error) {
-    console.error("Server Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    addMessage("bot", "Oops, something went wrong. Please try again.");
   }
-}
-
-    res.status(500).json({ error: 'Server error' });
-  }
-}
+});
+```
 
